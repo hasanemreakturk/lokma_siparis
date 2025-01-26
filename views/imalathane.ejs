@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İmalathane</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #6c757d;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #343a40;
+        }
+
+        .table-dark {
+            background-color: #e9ecef !important;
+            color: #ffffff;
+        }
+
+        .btn-success {
+            background-color: #dc3545;
+            border-color: #ff0019;
+        }
+
+        .btn-primary {
+            background-color: #fd7e14;
+            border-color: #fd7e14;
+        }
+
+        .category-section {
+            margin-bottom: 30px;
+        }
+
+        .table {
+            border: 1px solid #6c757d;
+            border-radius: 5px;
+            overflow: hidden;
+            border-color: #6c757d;
+        }
+
+        .table-bordered {
+            border-color: #6c757d !important;
+        }
+
+        .form-control {
+            background-color: #dedede;
+        }
+
+        .form-control:focus {
+            background-color: #dbdbdb;
+            border-color: #636363;
+            outline: none;
+        }
+
+        /* Aside Menu Styles */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: #343a40;
+            color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            transition: left 0.3s ease;
+            padding: 20px;
+            z-index: 1050;
+        }
+
+        .side-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .side-menu ul li {
+            margin: 10px 0;
+        }
+
+        .side-menu ul li a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .side-menu ul li a:hover {
+            text-decoration: underline;
+        }
+
+        #menuToggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background-color: #343a40;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: left 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="menuToggle">Menü</button>
+    <div id="sideMenu" class="side-menu">
+        <h1 style="color: rgb(255, 255, 255);font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;text-align: center;">
+            LOKMA
+        </h1>
+        <h3 style="font-size: 13px;text-align: center;" >
+            SINCE 2007
+        </h3>
+        <button class="btn btn-danger logout-button">Çıkış</button>
+    </div>
+
+    <div class="container mt-5">
+        <h2 class="text-center">Üretim</h2>
+
+        <!-- Tarih ve Şube Formu -->
+        <form id="filter-form" method="GET" action="/imalathane/filter">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label for="branch_name" class="form-label">Şube</label>
+                    <select name="branch_name" id="branch_name" class="form-control" required>
+                        <option value="" disabled selected>Şube Seçin</option>
+                        <% branches.forEach(branch => { %>
+                            <% if (branch.branch_id !== 7) { %>
+                                <option value="<%= branch.name %>"><%= branch.name %></option>
+                            <% } %>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="date" class="form-label">Tarih</label>
+                    <input type="text" id="date" name="date" class="form-control" value="<%= defaultDate %>" required>
+                </div>
+                <div class="col-md-4 align-self-end">
+                    <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+                </div>
+            </div>
+        </form>
+
+        <% if (message) { %>
+            <div class="alert alert-warning text-center">
+                <%= message %>
+            </div>
+        <% } %>
+
+        <!-- Production Form -->
+        <div class="container mt-5">
+            <h3>Yeni Üretim Kaydı</h3>
+            <form id="production-form" method="POST" action="/imalathane/production">
+                <% for (let category in ordersByCategory) { %>
+                    <div class="category-section">
+                        <h4 class="text-center">Kategori <%= category %></h4>
+                        <table class="table table-bordered text-center">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th>Miktar</th>
+                                    <th>Üretilen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% ordersByCategory[category].forEach(order => { %>
+                                    <tr>
+                                        <td><%= order.product_name %></td>
+                                        <td><%= order.amount %></td>
+                                        <td>
+                                            <input type="number" name="category<%= category %>[<%= order.order_id %>]" class="form-control" required>
+                                            <input type="hidden" name="branch_id" value="<%= branch_id %>">
+                                            <input type="hidden" name="product_id[<%= order.order_id %>]" value="<%= order.product_id %>">
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success">Tümünü Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        flatpickr("#date", {
+            dateFormat: "Y-m-d",
+            defaultDate: "<%= defaultDate %>",
+        });
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+
+        let menuOpen = false;
+
+        menuToggle.addEventListener('click', () => {
+            if (menuOpen) {
+                sideMenu.style.left = '-300px';
+                menuToggle.style.left = '20px';
+            } else {
+                sideMenu.style.left = '0';
+                menuToggle.style.left = '320px';
+            }
+            menuOpen = !menuOpen;
+        });
+    </script>
+</body>
+
+</html>

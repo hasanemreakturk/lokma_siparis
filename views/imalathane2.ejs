@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İmalathane Üretim</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .outer-container {
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: rgb(255, 41, 41);
+            border-color: rgb(255, 90, 90);
+        }
+
+        .btn-primary:hover {
+            background-color: rgb(161, 0, 0);
+            border-color: rgb(195, 0, 0);
+        }
+
+        /* Aside Menu Styles */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: #343a40;
+            color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            transition: left 0.3s ease;
+            padding: 20px;
+            z-index: 1050;
+        }
+
+        .side-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .side-menu ul li {
+            margin: 10px 0;
+        }
+
+        .side-menu ul li a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .side-menu ul li a:hover {
+            text-decoration: underline;
+        }
+
+        #menuToggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background-color: #343a40;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: left 0.3s ease;
+        }
+    </style>
+    <script>
+        async function fetchProducts() {
+            const category = document.getElementById('categorySelect').value;
+            if (!category) {
+                alert('Lütfen bir kategori seçiniz.');
+                return;
+            }
+
+            const response = await fetch(`/imalathane2/products?category=${category}`);
+            const products = await response.json();
+
+            const productSelect = document.getElementById('productSelect');
+            productSelect.innerHTML = '<option value="">Ürün Seç</option>';
+            products.forEach(product => {
+                productSelect.innerHTML += `<option value="${product.product_id}">${product.name}</option>`;
+            });
+        }
+
+        async function saveProduction() {
+            const branch_id = document.getElementById('branchSelect').value;
+            const product_id = document.getElementById('productSelect').value;
+            const amount = document.getElementById('amount').value;
+
+            if (!branch_id || !product_id || !amount || parseFloat(amount) <= 0) {
+                alert('Lütfen tüm alanları doldurun.');
+                return;
+            }
+
+            const response = await fetch('/imalathane2/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ branch_id, product_id, amount }),
+            });
+
+            const result = await response.json();
+
+            const messageBox = document.getElementById('messageBox');
+            if (result.error) {
+                messageBox.innerHTML = `<div class="alert alert-warning text-center">${result.error}</div>`;
+            } else {
+                messageBox.innerHTML = `<div class="alert alert-success text-center">${result.message}</div>`;
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <button id="menuToggle">Menü</button>
+    <div id="sideMenu" class="side-menu">
+        <ul>
+            <li><a href="/imalathane">İmalathane</a></li>
+            <li><a href="/imalathane2">İmalathane 2</a></li>
+        </ul>
+    </div>
+
+    <div class="container mt-5 outer-container">
+        <h1 class="text-center mb-4">Üretim</h1>
+        <div id="messageBox"></div>
+        <form id="save-form" onsubmit="event.preventDefault(); saveProduction();">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label for="branchSelect" class="form-label">Şube</label>
+                    <select id="branchSelect" class="form-control" required>
+                        <option value="" disabled selected>Şube Seçin</option>
+                        <% branches.forEach(branch => { %>
+                            <% if (branch.branch_id !== 7) { %>
+                                <option value="<%= branch.branch_id %>"><%= branch.name %></option>
+                            <% } %>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="categorySelect" class="form-label">Kategori</label>
+                    <select id="categorySelect" class="form-control" onchange="fetchProducts()" required>
+                        <option value="" disabled selected>Kategori Seçin</option>
+                        <% categories.forEach(category => { %>
+                            <option value="<%= category.category_id %>"><%= category.name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="productSelect" class="form-label">Ürün</label>
+                    <select id="productSelect" class="form-control" required>
+                        <option value="" disabled selected>Ürün Seçin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label for="amount" class="form-label">Miktar</label>
+                    <input type="number" id="amount" class="form-control" step="0.01" placeholder="Miktar girin" required>
+                </div>
+                <div class="col-md-4 align-self-end">
+                    <button type="submit" class="btn btn-primary w-100">Kaydet</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+
+        let menuOpen = false;
+
+        menuToggle.addEventListener('click', () => {
+            if (menuOpen) {
+                sideMenu.style.left = '-300px';
+                menuToggle.style.left = '20px';
+            } else {
+                sideMenu.style.left = '0';
+                menuToggle.style.left = '320px';
+            }
+            menuOpen = !menuOpen;
+        });
+    </script>
+</body>
+
+</html>

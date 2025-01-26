@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h1>Kullanıcı Kayıt Formu</h1>
+    <form action="/user/register" method="POST">
+        <label for="username">Kullanıcı Adı:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Şifre:</label>
+        <input type="password" id="password" name="password" required>
+
+        <label for="branch_id">Şube Seçin:</label>
+        <select id="branch_id" name="branch_id" required>
+            <% if (branches && branches.length > 0) { %>
+                <% branches.forEach(branch => { %>
+                    <option value="<%= branch.branch_id %>"><%= branch.name %></option>
+                <% }); %>
+            <% } else { %>
+                <option value="">Şube bulunamadı</option>
+            <% } %>
+        </select>
+        
+        <select id="role_id" name="role_id" required>
+            <% if (roles && roles.length > 0) { %>
+                <% roles.forEach(role => { %>
+                    <option value="<%= role.role_id %>"><%= role.role_name %></option>
+                <% }); %>
+            <% } else { %>
+                <option value="">Rol bulunamadı</option>
+            <% } %>
+        </select>
+
+        <button type="submit">Kayıt Ol</button>
+    </form>
+</body>
+</html>

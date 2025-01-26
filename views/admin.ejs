@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chart-section {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .form-container {
+            width: 25%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        .chart-container {
+            flex-grow: 1;
+            max-width: 75%;
+            height: 500px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        select, button {
+            font-size: 16px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #fda829;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #a47e26;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- İlk grafik ve form -->
+        <div class="chart-section">
+            <div class="form-container">
+                <h2>Stok Kontrol</h2>
+                <form id="categoryForm">
+                    <label for="categorySelect">Kategori Seç:</label>
+                    <select id="categorySelect" name="category">
+                        <% categories.forEach(category => { %>
+                            <option value="<%= category.category_id %>"><%= category.name %></option>
+                        <% }) %>
+                    </select>
+                    <button type="submit">Göster</button>
+                </form>
+            </div>
+            <div class="chart-container">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Yeni grafik için ikinci bölüm -->
+        <div class="chart-section">
+            <div class="form-container">
+                <h2>Paket-Porsiyon Ciro</h2>
+                <form id="productForm">
+                    <label for="productSelect">Ürün Seç:</label>
+                    <select id="productSelect" name="product">
+                        <% products.forEach(product => { %>
+                            <option value="<%= product.product_id %>"><%= product.name %></option>
+                        <% }) %>
+                    </select>
+                    <button type="submit">Göster</button>
+                </form>
+            </div>
+            <div class="chart-container">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        const stockChartCtx = document.getElementById('stockChart').getContext('2d');
+        const monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
+        let stockChart, monthlySalesChart;
+    
+        // İlk tabloyu ve grafik tablolarını getir
+        document.addEventListener('DOMContentLoaded', async () => {
+            // İlk stok verisini yükle
+            await fetchStockData();
+    
+            // İlk satış verisini yükle
+            const defaultProduct = document.getElementById('productSelect').value;
+            if (defaultProduct) {
+                await fetchMonthlySalesData(defaultProduct);
+            }
+        });
+    
+        document.getElementById('categoryForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await fetchStockData();
+        });
+    
+        document.getElementById('productForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const selectedProduct = document.getElementById('productSelect').value;
+            await fetchMonthlySalesData(selectedProduct);
+        });
+    
+        async function fetchStockData() {
+            const selectedCategory = document.getElementById('categorySelect').value;
+    
+            try {
+                const response = await fetch(`/admin/getStockData?category=${selectedCategory}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+    
+                const productNames = data.map(item => item.product_name);
+                const amounts = data.map(item => item.amount);
+    
+                if (stockChart) stockChart.destroy();
+    
+                stockChart = new Chart(stockChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: productNames,
+                        datasets: [{
+                            label: 'Stok Miktarı',
+                            data: amounts,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Fetch hatası:', error);
+                alert('Veri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+            }
+        }
+        async function fetchMonthlySalesData(productId) {
+    try {
+        const response = await fetch(`/admin/getMonthlySalesData?product_id=${productId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const { kgProfitData, porsionProfitData, lineData, kgAmountData, porsionAmountData } = await response.json();
+
+        if (monthlySalesChart) monthlySalesChart.destroy();
+
+        monthlySalesChart = new Chart(monthlySalesCtx, {
+            type: 'bar', // Combined chart
+            data: {
+                labels: lineData.map(data => data.x), // Tarihler x ekseninde
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Paket Satış (TL)',
+                        data: kgProfitData.map(data => data.y),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Porsiyon Satış (TL)',
+                        data: porsionProfitData.map(data => data.y),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                    },
+                    {
+                        type: 'line', // Line chart
+                        label: 'Toplam Kar',
+                        data: lineData.map(data => data.y),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Toplam KG Satış',
+                        data: kgAmountData.map(data => data.y),
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Toplam Porsiyon Satış',
+                        data: porsionAmountData.map(data => data.y),
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            displayFormats: {
+                                month: 'MMMM yyyy', // Ay ve yıl
+                            },
+                            tooltipFormat: 'MMMM yyyy',
+                        },
+                        title: { display: true, text: 'Tarih' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Değerler' },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                },
+            },
+        });
+    } catch (error) {
+        console.error('Fetch hatası:', error);
+        alert('Veri yüklenirken bir hata oluştu.');
+    }
+}
+ 
+    </script>
+    
+</body>
+</html>

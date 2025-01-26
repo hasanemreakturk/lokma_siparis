@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sipariş Ekranı</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: white;
+        }
+        h2 {
+            color: black;
+        }
+        .container {
+            border: 2px solid rgb(193, 193, 193);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        table {
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <!-- Tatlı Sipariş Ekranı -->
+        <div id="tatli-siparis" class="siparis-ekrani">
+            <h2 class="text-center mb-4">Tatlı Siparişleri</h2>
+            <form id="tatli-form">
+                <table class="table table-bordered text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Tatlı Adı</th>
+                            <th>KG</th>
+                            <th>Tahmin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% tatliTahminleri.forEach((tatli, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= tatli.name %></td>
+                                <td>
+                                    <input type="number" step="0.1" name="tatlilar[<%= index %>][kg]" class="form-control" placeholder="KG giriniz">
+                                    <input type="hidden" name="tatlilar[<%= index %>][tatli]" value="<%= tatli.name %>">
+                                </td>
+                                <td><%= tatli.prediction %> KG</td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <button type="button" id="next-to-pasta" class="btn btn-secondary">Pasta Siparişine Geç</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Pasta Sipariş Ekranı -->
+        <div id="pasta-siparis" class="siparis-ekrani d-none">
+            <h2 class="text-center mb-4">Pasta Siparişleri</h2>
+            <form id="pasta-form">
+                <table class="table table-bordered text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Pasta Adı</th>
+                            <th>Adet</th>
+                            <th>Tahmin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pastaTahminleri.forEach((pasta, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= pasta.name %></td>
+                                <td>
+                                    <input type="number" name="pastalar[<%= index %>][adet]" class="form-control" placeholder="Adet giriniz">
+                                    <input type="hidden" name="pastalar[<%= index %>][pasta]" value="<%= pasta.name %>">
+                                </td>
+                                <td><%= pasta.prediction %> Adet</td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <button type="button" id="back-to-tatli" class="btn btn-secondary">Tatlı Siparişine Dön</button>
+                    <button type="button" id="next-to-cesit" class="btn btn-secondary">Çeşit Siparişine Geç</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Çeşit Sipariş Ekranı -->
+        <div id="cesit-siparis" class="siparis-ekrani d-none">
+            <h2 class="text-center mb-4">Çeşit Siparişleri</h2>
+            <form id="cesit-form">
+                <table class="table table-bordered text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Çeşit Adı</th>
+                            <th>KG</th>
+                            <th>Tahmin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% cesitTahminleri.forEach((cesit, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= cesit.name %></td>
+                                <td>
+                                    <input type="number" step="0.1" name="cesitler[<%= index %>][kg]" class="form-control" placeholder="KG giriniz">
+                                    <input type="hidden" name="cesitler[<%= index %>][cesit]" value="<%= cesit.name %>">
+                                </td>
+                                <td><%= cesit.prediction %> KG</td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <button type="button" id="back-to-pasta" class="btn btn-secondary">Pasta Siparişine Dön</button>
+                    <button type="button" id="show-all-orders" class="btn btn-primary">Tüm Siparişleri Göster</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tüm Siparişler Ekranı -->
+        <div id="all-orders" class="siparis-ekrani d-none">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ürün Adı</th>
+                        <th>Miktar</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-summary">
+                    <!-- Sipariş özetleri buraya dinamik olarak eklenecek -->
+                </tbody>
+            </table>
+
+            <div class="text-center">
+                <button type="button" id="back-to-cesit" class="btn btn-secondary">Çeşit Siparişine Dön</button>
+                <button type="button" id="back-to-pasta" class="btn btn-secondary">Pasta Siparişine Dön</button>
+                <button type="button" id="confirm-orders" class="btn btn-success">Onayla ve Gönder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dinamik Veri ve Sipariş Özetini Ekleme -->
+    <script>
+        // Tatlı Siparişinden Pasta Siparişine Geçiş
+        document.getElementById('next-to-pasta').addEventListener('click', () => {
+            toggleVisibility('tatli-siparis', 'pasta-siparis');
+        });
+
+        // Pasta Siparişinden Tatlı Siparişine Geri Dönüş
+        document.getElementById('back-to-tatli').addEventListener('click', () => {
+            toggleVisibility('pasta-siparis', 'tatli-siparis');
+        });
+
+        // Pasta Siparişinden Çeşit Siparişine Geçiş
+        document.getElementById('next-to-cesit').addEventListener('click', () => {
+            toggleVisibility('pasta-siparis', 'cesit-siparis');
+        });
+
+        // Çeşit Siparişinden Pasta Siparişine Geri Dönüş
+        document.getElementById('back-to-pasta').addEventListener('click', () => {
+            toggleVisibility('cesit-siparis', 'pasta-siparis');
+        });
+
+        // Tüm Siparişleri Göster
+        document.getElementById('show-all-orders').addEventListener('click', () => {
+            const orders = collectOrders();
+            displayOrders(orders);
+            toggleVisibility('cesit-siparis', 'all-orders');
+        });
+
+        // Çeşit Siparişine Dön Butonu
+        document.getElementById('back-to-cesit').addEventListener('click', () => {
+            document.getElementById('all-orders').classList.add('d-none');
+            document.getElementById('cesit-siparis').classList.remove('d-none');
+        });
+
+        // Pasta Siparişine Dön Butonu
+        document.getElementById('back-to-pasta').addEventListener('click', () => {
+            document.getElementById('all-orders').classList.add('d-none');
+            document.getElementById('pasta-siparis').classList.remove('d-none');
+        });
+
+        // Siparişleri Onayla ve Gönder
+        document.getElementById('confirm-orders').addEventListener('click', () => {
+            const { tatlilar, pastalar, cesitler } = collectOrders();
+            submitOrders(tatlilar, pastalar, cesitler);
+        });
+
+        // Yardımcı Fonksiyonlar
+
+        // Ekranlar arasında geçiş yapar
+        function toggleVisibility(hideId, showId) {
+            document.getElementById(hideId).classList.add('d-none');
+            document.getElementById(showId).classList.remove('d-none');
+        }
+
+        // Formlardan siparişleri toplar
+        function collectOrders() {
+            const tatliForm = new FormData(document.getElementById('tatli-form'));
+            const pastaForm = new FormData(document.getElementById('pasta-form'));
+            const cesitForm = new FormData(document.getElementById('cesit-form'));
+
+            const tatlilar = parseFormData(tatliForm, 'tatlilar');
+            const pastalar = parseFormData(pastaForm, 'pastalar');
+            const cesitler = parseFormData(cesitForm, 'cesitler');
+
+            return { tatlilar, pastalar, cesitler };
+        }
+
+        // Form verilerini belirli bir formata göre işler
+        function parseFormData(formData, type) {
+            const result = [];
+            formData.forEach((value, key) => {
+                const match = key.match(new RegExp(`^${type}\\[(\\d+)]\\[(\\w+)]$`));
+                if (match) {
+                    const index = match[1];
+                    const field = match[2];
+                    result[index] = result[index] || {};
+                    result[index][field] = value;
+                }
+            });
+            return result;
+        }
+
+        // Sipariş özetini ekranda gösterir
+        function displayOrders({ tatlilar, pastalar, cesitler }) {
+            const ordersSummary = document.getElementById('orders-summary');
+            ordersSummary.innerHTML = '';
+
+            [...tatlilar, ...pastalar, ...cesitler].forEach((order, index) => {
+                if (order.kg > 0 || order.adet > 0) {
+                    ordersSummary.innerHTML += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${order.tatli || order.pasta || order.cesit}</td>
+                            <td>${order.kg || order.adet}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        // Siparişleri sunucuya gönderir
+        function submitOrders(tatlilar, pastalar, cesitler) {
+            fetch('/siparis/siparisGonder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tatlilar, pastalar, cesitler }),
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        alert('Siparişler başarıyla gönderildi!');
+                        window.location.href = '/siparis';
+                    } else {
+                        response.text().then((text) => alert(`Hata: ${text}`));
+                    }
+                })
+                .catch((error) => console.error('Fetch sırasında hata:', error));
+        }
+    </script>
+
+</body>
+
+</html>
